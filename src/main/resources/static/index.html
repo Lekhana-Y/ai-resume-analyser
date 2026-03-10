@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Resume Analyzer</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Segoe UI',sans-serif;
+}
+
+body{
+background:linear-gradient(135deg,#0f172a,#1e293b,#334155);
+min-height:100vh;
+color:white;
+}
+
+/* NAVBAR */
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px 60px;
+}
+
+.logo{
+font-size:22px;
+font-weight:bold;
+}
+
+.nav-links a{
+margin-left:20px;
+text-decoration:none;
+color:#ccc;
+transition:0.3s;
+}
+
+.nav-links a:hover{
+color:white;
+}
+
+/* MAIN */
+
+.main{
+display:flex;
+justify-content:center;
+align-items:center;
+margin-top:60px;
+}
+
+.container{
+width:850px;
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(20px);
+border-radius:20px;
+padding:50px;
+box-shadow:0 25px 60px rgba(0,0,0,0.5);
+text-align:center;
+}
+
+h1{
+font-size:42px;
+margin-bottom:10px;
+}
+
+.subtitle{
+opacity:0.8;
+margin-bottom:35px;
+}
+
+/* UPLOAD AREA */
+
+.upload-area{
+border:2px dashed rgba(255,255,255,0.3);
+padding:60px;
+border-radius:15px;
+margin-bottom:30px;
+cursor:pointer;
+transition:0.3s;
+display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+gap:10px;
+position:relative;
+}
+
+.upload-area:hover{
+border-color:#22c55e;
+background:rgba(255,255,255,0.05);
+}
+
+.upload-area.dragover{
+border-color:#22c55e;
+background:rgba(34,197,94,0.15);
+}
+
+.upload-label{
+font-size:18px;
+opacity:0.9;
+}
+
+input[type=file]{
+position:absolute;
+width:100%;
+height:100%;
+opacity:0;
+cursor:pointer;
+}
+
+/* BUTTON */
+
+button{
+background:linear-gradient(90deg,#22c55e,#16a34a);
+border:none;
+padding:15px 45px;
+font-size:18px;
+color:white;
+border-radius:12px;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+transform:scale(1.05);
+box-shadow:0 10px 30px rgba(34,197,94,0.6);
+}
+
+/* LOADING */
+
+.loading{
+display:none;
+margin-top:20px;
+font-size:18px;
+}
+
+/* RESULT */
+
+.result{
+margin-top:40px;
+background:white;
+color:black;
+border-radius:15px;
+padding:30px;
+display:none;
+}
+
+.result-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:25px;
+margin-top:20px;
+}
+
+.card{
+background:#f5f7fa;
+padding:20px;
+border-radius:12px;
+}
+
+.card h3{
+margin-bottom:10px;
+}
+
+.skill{
+display:inline-block;
+background:#22c55e;
+color:white;
+padding:6px 12px;
+border-radius:20px;
+margin:4px;
+font-size:14px;
+}
+
+.missing{
+display:inline-block;
+background:#ef4444;
+color:white;
+padding:6px 12px;
+border-radius:20px;
+margin:4px;
+font-size:14px;
+}
+
+.score{
+font-size:26px;
+font-weight:bold;
+color:#16a34a;
+}
+
+.length{
+color:#555;
+margin-top:5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+<div class="logo">🚀 AI Resume Analyzer</div>
+
+<div class="nav-links">
+<a href="#">Home</a>
+<a href="#">Features</a>
+<a href="#">About</a>
+</div>
+</div>
+
+<div class="main">
+
+<div class="container">
+
+<h1>AI Resume Analyzer</h1>
+<p class="subtitle">Upload your resume and get instant AI insights</p>
+
+<!-- FIXED UPLOAD BOX -->
+
+<div class="upload-area" id="uploadArea">
+
+<input type="file" id="resumeFile">
+
+<div class="upload-label">
+📄 Drag & Drop Resume or Click to Upload
+</div>
+
+</div>
+
+<button onclick="uploadResume()">Analyze Resume</button>
+
+<div class="loading" id="loading">
+⏳ Analyzing Resume...
+</div>
+
+<div class="result" id="resultBox">
+
+<h2>Analysis Result</h2>
+
+<div class="result-grid">
+
+<div class="card">
+<h3>Detected Skills</h3>
+<div id="skills"></div>
+</div>
+
+<div class="card">
+<h3>Missing Skills</h3>
+<div id="missing"></div>
+</div>
+
+<div class="card">
+<h3>ATS Score</h3>
+<div id="score" class="score"></div>
+</div>
+
+<div class="card">
+<h3>Resume Length</h3>
+<div id="length" class="length"></div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+<script>
+
+const uploadArea=document.getElementById("uploadArea");
+
+uploadArea.addEventListener("dragover",e=>{
+e.preventDefault();
+uploadArea.classList.add("dragover");
+});
+
+uploadArea.addEventListener("dragleave",()=>{
+uploadArea.classList.remove("dragover");
+});
+
+uploadArea.addEventListener("drop",e=>{
+e.preventDefault();
+document.getElementById("resumeFile").files=e.dataTransfer.files;
+uploadArea.classList.remove("dragover");
+});
+
+function uploadResume(){
+
+const file=document.getElementById("resumeFile").files[0];
+
+if(!file){
+alert("Please upload a resume first");
+return;
+}
+
+document.getElementById("loading").style.display="block";
+document.getElementById("resultBox").style.display="none";
+
+const formData=new FormData();
+formData.append("file",file);
+
+fetch("/api/resume/analyze",{
+method:"POST",
+body:formData
+})
+.then(res=>res.json())
+.then(data=>{
+
+document.getElementById("loading").style.display="none";
+document.getElementById("resultBox").style.display="block";
+
+const skillsDiv=document.getElementById("skills");
+skillsDiv.innerHTML="";
+
+data.skills.forEach(skill=>{
+const span=document.createElement("span");
+span.className="skill";
+span.innerText=skill;
+skillsDiv.appendChild(span);
+});
+
+const missingDiv=document.getElementById("missing");
+missingDiv.innerHTML="";
+
+data.missingSkills.slice(0,6).forEach(skill=>{
+const span=document.createElement("span");
+span.className="missing";
+span.innerText=skill;
+missingDiv.appendChild(span);
+});
+
+document.getElementById("score").innerText=data.score+"/100";
+
+document.getElementById("length").innerText=
+data.resumeTextLength+" characters";
+
+})
+.catch(err=>{
+console.error(err);
+alert("Error analyzing resume");
+});
+
+}
+
+</script>
+
+</body>
+</html>
